@@ -1,1788 +1,400 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VK Content Manager</title>
-    <!-- Try multiple CDN sources for reliability -->
-    <script src="https://unpkg.com/@vkontakte/vk-bridge@2.7.0/dist/browser.min.js" 
-            onerror="loadFallbackBridge()" 
-            crossorigin="anonymous"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-primary: #000000;
-            --bg-secondary: #1c1c1e;
-            --bg-tertiary: #2c2c2e;
-            --text-primary: #ffffff;
-            --text-secondary: #8e8e93;
-            --accent-color: #0077ff;
-            --accent-hover: #0066dd;
-            --success-color: #34c759;
-            --error-color: #ff3b30;
-            --warning-color: #ff9500;
-            --border-color: #38383a;
-            --card-radius: 12px;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.5;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-            padding: 30px 0;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #0077ff, #5856d6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .header p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* Connection Status Banner */
-        .connection-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 12px 20px;
-            text-align: center;
-            font-size: 0.9rem;
-            font-weight: 600;
-            z-index: 2000;
-            transform: translateY(-100%);
-            transition: transform 0.3s ease;
-        }
-
-        .connection-banner.show {
-            transform: translateY(0);
-        }
-
-        .connection-banner.offline {
-            background: var(--error-color);
-            color: white;
-        }
-
-        .connection-banner.warning {
-            background: var(--warning-color);
-            color: black;
-        }
-
-        .connection-banner.success {
-            background: var(--success-color);
-            color: white;
-        }
-
-        .connection-banner + .container {
-            margin-top: 60px;
-        }
-
-        /* Stats Bar */
-        .stats-bar {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            background: var(--bg-secondary);
-            padding: 15px 25px;
-            border-radius: var(--card-radius);
-            text-align: center;
-            min-width: 150px;
-            border: 1px solid var(--border-color);
-        }
-
-        .stat-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--accent-color);
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        /* Mode Toggle */
-        .mode-toggle {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-
-        .mode-btn {
-            padding: 12px 28px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-            border: 2px solid transparent;
-        }
-
-        .mode-btn.active {
-            background: var(--accent-color);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0, 119, 255, 0.3);
-        }
-
-        .mode-btn:hover:not(.active) {
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-        }
-
-        /* Index Button */
-        .index-section {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .index-btn {
-            padding: 16px 40px;
-            background: linear-gradient(135deg, var(--accent-color), #5856d6);
-            border: none;
-            border-radius: 30px;
-            color: white;
-            font-size: 1.05rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0, 119, 255, 0.4);
-        }
-
-        .index-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(0, 119, 255, 0.5);
-        }
-
-        .index-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .demo-btn {
-            padding: 16px 40px;
-            background: var(--bg-tertiary);
-            border: 2px solid var(--border-color);
-            border-radius: 30px;
-            color: var(--text-primary);
-            font-size: 1.05rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .demo-btn:hover {
-            border-color: var(--warning-color);
-            color: var(--warning-color);
-        }
-
-        /* Controls Section */
-        .controls-section {
-            background: var(--bg-secondary);
-            padding: 25px;
-            border-radius: var(--card-radius);
-            margin-bottom: 25px;
-            border: 1px solid var(--border-color);
-        }
-
-        .search-bar {
-            width: 100%;
-            padding: 14px 20px;
-            background: var(--bg-tertiary);
-            border: 2px solid var(--border-color);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            margin-bottom: 20px;
-            transition: border-color 0.3s;
-        }
-
-        .search-bar:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
-
-        .search-bar::placeholder {
-            color: var(--text-secondary);
-        }
-
-        .filter-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .filter-dropdown {
-            flex: 1;
-            min-width: 180px;
-            padding: 12px 16px;
-            background: var(--bg-tertiary);
-            border: 2px solid var(--border-color);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: border-color 0.3s;
-        }
-
-        .filter-dropdown:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
-
-        .sort-dropdown {
-            min-width: 200px;
-        }
-
-        .chips-container {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .chip {
-            padding: 8px 18px;
-            background: var(--bg-tertiary);
-            border: 2px solid var(--border-color);
-            border-radius: 20px;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            user-select: none;
-        }
-
-        .chip:hover {
-            border-color: var(--accent-color);
-            color: var(--text-primary);
-        }
-
-        .chip.active {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: white;
-        }
-
-        /* Grid Layout */
-        .content-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .content-grid {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                gap: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Cards */
-        .content-card {
-            background: var(--bg-secondary);
-            border-radius: var(--card-radius);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
-        }
-
-        .content-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-        }
-
-        .card-thumbnail {
-            width: 100%;
-            height: 180px;
-            object-fit: cover;
-            background: var(--bg-tertiary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            font-size: 3rem;
-        }
-
-        .card-thumbnail img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .card-body {
-            padding: 16px;
-        }
-
-        .card-title {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.4;
-        }
-
-        .card-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .meta-icon {
-            font-size: 1rem;
-        }
-
-        .card-badges {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .badge-resolution {
-            background: rgba(0, 119, 255, 0.2);
-            color: var(--accent-color);
-        }
-
-        .badge-duration {
-            background: rgba(88, 86, 214, 0.2);
-            color: #5856d6;
-        }
-
-        .badge-type {
-            background: rgba(52, 199, 89, 0.2);
-            color: var(--success-color);
-        }
-
-        .card-text-preview {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.5;
-            margin-top: 8px;
-        }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.92);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-        }
-
-        .loading-overlay.hidden {
-            display: none;
-        }
-
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid var(--bg-tertiary);
-            border-top-color: var(--accent-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 25px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .progress-text {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .progress-detail {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .progress-bar-container {
-            width: 300px;
-            height: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-color), #5856d6);
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
-
-        .retry-btn {
-            margin-top: 25px;
-            padding: 12px 30px;
-            background: var(--accent-color);
-            border: none;
-            border-radius: 25px;
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .retry-btn:hover {
-            background: var(--accent-hover);
-            transform: scale(1.05);
-        }
-
-        /* Error Section */
-        .error-section {
-            background: rgba(255, 59, 48, 0.1);
-            border: 1px solid var(--error-color);
-            border-radius: var(--card-radius);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .error-section.hidden {
-            display: none;
-        }
-
-        .error-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .error-title {
-            color: var(--error-color);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .error-toggle {
-            color: var(--text-secondary);
-            font-size: 1.2rem;
-            transition: transform 0.3s;
-        }
-
-        .error-toggle.expanded {
-            transform: rotate(180deg);
-        }
-
-        .error-details {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-
-        .error-details.expanded {
-            max-height: 500px;
-            margin-top: 15px;
-        }
-
-        .error-content {
-            background: var(--bg-primary);
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 0.85rem;
-            color: var(--error-color);
-            word-break: break-all;
-            white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state.hidden {
-            display: none;
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-
-        .empty-state h3 {
-            font-size: 1.3rem;
-            margin-bottom: 10px;
-            color: var(--text-primary);
-        }
-
-        .empty-state p {
-            margin-bottom: 20px;
-        }
-
-        .empty-state button {
-            margin-top: 15px;
-        }
-
-        /* Network Status Indicator */
-        .network-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .network-status.online {
-            background: rgba(52, 199, 89, 0.2);
-            color: var(--success-color);
-        }
-
-        .network-status.offline {
-            background: rgba(255, 59, 48, 0.2);
-            color: var(--error-color);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: currentColor;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--border-color);
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .content-card {
-            animation: fadeIn 0.3s ease forwards;
-        }
-
-        /* Debug Info Panel */
-        .debug-panel {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--card-radius);
-            padding: 15px;
-            max-width: 350px;
-            font-size: 0.8rem;
-            z-index: 999;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .debug-panel.hidden {
-            display: none;
-        }
-
-        .debug-panel h4 {
-            color: var(--accent-color);
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-
-        .debug-item {
-            margin-bottom: 8px;
-            word-break: break-all;
-        }
-
-        .debug-label {
-            color: var(--text-secondary);
-        }
-
-        .debug-value {
-            color: var(--text-primary);
-            font-family: monospace;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VK Content Manager</title>
+<style>
+:root{--bg:#0e0f11;--panel:#18191c;--line:#2a2c31;--text:#f1f2f4;--mute:#9a9ea8;--accent:#3d8bff;--ok:#3ecf6e;--err:#ff5a50;--warn:#f0a030;--r:10px}
+[data-theme=light]{--bg:#f3f4f6;--panel:#fff;--line:#dfe1e6;--text:#16181d;--mute:#626874;--accent:#0a63e0;--ok:#16883f;--err:#d4372c;--warn:#a86400}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.5rem;font-weight:650}
+.mute{color:var(--mute);font-size:14px}
+header{margin-bottom:18px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;margin-bottom:14px}
+.tabs,.acts{display:flex;gap:8px;flex-wrap:wrap}
+.tabs{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:3px}
+.tabs button{border:0;background:none;color:var(--mute);padding:7px 18px;border-radius:99px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--accent);color:#fff}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 16px;border-radius:99px;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.err{border-color:var(--err);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.filters{display:flex;flex-wrap:wrap;gap:10px}
+input,select{background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 12px;font:inherit}
+input{flex:1 1 240px}select{flex:0 1 190px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;flex-basis:100%}
+.chip{border:1px solid var(--line);background:none;color:var(--mute);border-radius:99px;padding:4px 14px;font:inherit;font-size:13px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.bar-track{height:6px;background:var(--line);border-radius:3px;margin:10px 0;overflow:hidden}
+#fill{height:100%;width:0;background:var(--accent);transition:width .2s}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:10px}
+.card{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;color:inherit;text-decoration:none}
+a.card:hover{border-color:var(--accent)}
+.thumb{position:relative;aspect-ratio:16/9;background:var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font-size:12px;padding:1px 6px;border-radius:4px}
+.body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.title,.text{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.title{-webkit-line-clamp:2;font-weight:600}
+.text{-webkit-line-clamp:4}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;font-size:13px;color:var(--mute);margin-top:auto}
+.tag{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line)}
+.empty{text-align:center;padding:56px 16px;color:var(--mute)}
+.empty b{display:block;color:var(--text);font-size:1.1rem;margin-bottom:4px}
+.more{display:block;margin:22px auto 0}
+.toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,24px);opacity:0;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;max-width:90vw;transition:.2s;z-index:10}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{border-color:var(--ok)}.toast.warn{border-color:var(--warn)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
 </head>
 <body>
-    <!-- Connection Status Banner -->
-    <div class="connection-banner" id="connectionBanner">
-        <span id="bannerText"></span>
+<main class="wrap">
+  <header>
+    <h1>VK Content Manager</h1>
+    <p class="mute" id="status" aria-live="polite">Connecting to VK…</p>
+  </header>
+
+  <div class="bar">
+    <div class="tabs" role="group" aria-label="Content type">
+      <button data-mode="video" aria-pressed="true">Videos</button>
+      <button data-mode="post" aria-pressed="false">Posts</button>
     </div>
-
-    <!-- Loading Overlay -->
-    <div class="loading-overlay hidden" id="loadingOverlay">
-        <div class="spinner"></div>
-        <div class="progress-text" id="progressText">Initializing...</div>
-        <div class="progress-detail" id="progressDetail">Please wait</div>
-        <div class="progress-bar-container">
-            <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
-        </div>
-        <button class="retry-btn hidden" id="retryBtn" onclick="retryOperation()">🔄 Retry</button>
+    <div class="acts">
+      <button class="btn primary" id="indexBtn"></button>
+      <button class="btn" id="demoBtn">Preview with demo data</button>
+      <button class="btn" id="exportBtn">Export CSV</button>
     </div>
+  </div>
 
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1>📱 VK Content Manager</h1>
-            <p>Index, filter, and manage your VK videos and posts</p>
-            <div style="margin-top: 15px;">
-                <span class="network-status online" id="networkStatus">
-                    <span class="status-dot"></span>
-                    <span id="networkStatusText">Online</span>
-                </span>
-                <span style="margin-left: 10px; color: var(--text-secondary); font-size: 0.85rem;" id="bridgeStatus"></span>
-            </div>
-        </header>
-
-        <!-- Stats Bar -->
-        <div class="stats-bar" id="statsBar">
-            <div class="stat-item">
-                <div class="stat-value" id="totalCount">0</div>
-                <div class="stat-label">Total Items</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="lastUpdated">Never</div>
-                <div class="stat-label">Last Updated</div>
-            </div>
-        </div>
-
-        <!-- Mode Toggle -->
-        <div class="mode-toggle">
-            <button class="mode-btn active" data-mode="video" onclick="switchMode('video')">🎬 Videos</button>
-            <button class="mode-btn" data-mode="post" onclick="switchMode('post')">📝 Posts</button>
-        </div>
-
-        <!-- Index Button -->
-        <div class="index-section">
-            <button class="index-btn" id="indexBtn" onclick="startIndexing()">
-                🔄 Index Content
-            </button>
-            <button class="demo-btn" id="demoBtn" onclick="enableDemoMode()">
-                🎮 Load Demo Data
-            </button>
-        </div>
-
-        <!-- Controls -->
-        <div class="controls-section" id="controlsSection">
-            <input type="text" class="search-bar" id="searchBar" placeholder="🔍 Search content..." oninput="applyFilters()">
-            
-            <div class="filter-row">
-                <select class="filter-dropdown" id="typeFilter" onchange="applyFilters()">
-                    <option value="">All Types</option>
-                </select>
-                <select class="filter-dropdown sort-dropdown" id="sortDropdown" onchange="applyFilters()">
-                    <option value="newest">📅 Newest First</option>
-                    <option value="oldest">📅 Oldest First</option>
-                    <option value="most-engaged">🔥 Most Engaged</option>
-                    <option value="least-engaged">❄️ Least Engaged</option>
-                    <option value="duration-long">⏱️ Longest Duration</option>
-                    <option value="duration-short">⏱️ Shortest Duration</option>
-                </select>
-            </div>
-
-            <div class="chips-container" id="chipsContainer">
-                <!-- Dynamic chips will be inserted here -->
-            </div>
-        </div>
-
-        <!-- Error Section (Hidden by default) -->
-        <div class="error-section hidden" id="errorSection">
-            <div class="error-header" onclick="toggleErrorDetails()">
-                <span class="error-title">⚠️ Error Occurred</span>
-                <span class="error-toggle" id="errorToggle">▼</span>
-            </div>
-            <div class="error-details" id="errorDetails">
-                <div class="error-content" id="errorContent"></div>
-            </div>
-        </div>
-
-        <!-- Content Grid -->
-        <div class="content-grid" id="contentGrid">
-            <!-- Cards will be dynamically inserted here -->
-        </div>
-
-        <!-- Empty State -->
-        <div class="empty-state hidden" id="emptyState">
-            <div class="empty-state-icon">📭</div>
-            <h3>No Content Found</h3>
-            <p>Click "Index Content" to load your VK data, or try "Load Demo Data"</p>
-        </div>
+  <div class="panel" id="progress" hidden>
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+      <span id="progText" aria-live="polite"></span>
+      <button class="btn" id="cancelBtn">Stop</button>
     </div>
+    <div class="bar-track"><div id="fill"></div></div>
+  </div>
 
-    <!-- Debug Panel (toggle with ?debug=1 in URL) -->
-    <div class="debug-panel hidden" id="debugPanel">
-        <h4>🔧 Debug Info</h4>
-        <div id="debugContent"></div>
-    </div>
+  <div class="panel err" id="err" role="alert" hidden>
+    <span id="errMsg"></span>
+    <button class="btn" id="retryBtn">Try again</button>
+  </div>
 
-    <script>
-        // ============================================
-        // GLOBAL STATE & CONFIGURATION
-        // ============================================
-        
-        const CONFIG = {
-            APP_ID: 53969951,
-            MAX_ITEMS: 1000,
-            BATCH_SIZE: 50,
-            STORAGE_KEY_PREFIX: 'vk_content_',
-            RETRY_DELAY: 2000,
-            MAX_RETRIES: 3,
-            TIMEOUT_MS: 10000
-        };
+  <div class="panel filters">
+    <input id="q" type="search" placeholder="Search your content" aria-label="Search">
+    <select id="type" aria-label="Filter"></select>
+    <select id="sort" aria-label="Sort"></select>
+    <div class="chips" id="chips"></div>
+  </div>
 
-        let state = {
-            currentMode: 'video',
-            allContent: [],
-            filteredContent: [],
-            accessToken: null,
-            userId: null,
-            isOnline: navigator.onLine,
-            bridgeAvailable: false,
-            isDemoMode: false,
-            currentRetryCount: 0,
-            pendingOperation: null
-        };
+  <p class="mute" id="summary" aria-live="polite"></p>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden></div>
+  <button class="btn more" id="more" hidden>Show more</button>
+</main>
+<div class="toast" id="toast" role="status"></div>
 
-        // ============================================
-        // NETWORK DETECTION
-        // ============================================
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const timeout = ms => new Promise((_, no) => setTimeout(() => no(new Error('Timed out')), ms));
 
-        function initNetworkDetection() {
-            window.addEventListener('online', () => handleNetworkChange(true));
-            window.addEventListener('offline', () => handleNetworkChange(false));
-            
-            updateNetworkStatus();
-            
-            // Periodic check every 30 seconds
-            setInterval(updateNetworkStatus, 30000);
-        }
+const CFG = {
+  APP_ID: 53969951, MAX: 5000, BATCH: 100, PAGE: 48, DELAY: 350, RETRIES: 3,
+  // vk-bridge exposes window.vkBridge (not `bridge`); fall back to a second CDN if the first fails
+  BRIDGES: [
+    'https://unpkg.com/@vkontakte/vk-bridge@2.7.0/dist/browser.min.js',
+    'https://cdn.jsdelivr.net/npm/@vkontakte/vk-bridge@2.7.0/dist/browser.min.js'
+  ]
+};
+const TYPES = ['text', 'photo', 'video', 'link', 'audio', 'document'];
+const DAYS = { week: 7, month: 30, year: 365 };
 
-        function handleNetworkChange(isOnline) {
-            state.isOnline = isOnline;
-            updateNetworkStatus();
-            
-            if (isOnline) {
-                showBanner('Connection restored!', 'success');
-                setTimeout(hideBanner, 3000);
-            } else {
-                showBanner('You are offline. Some features may be limited.', 'offline');
-            }
-        }
+const MODES = {
+  video: {
+    method: 'fave.get', params: { item_type: 'video' }, scope: '',
+    types: [['', 'All resolutions'], ['4K', '4K'], ['1080p', '1080p'], ['720p', '720p'], ['480p', '480p'], ['360p', '360p'], ['Unknown', 'Unknown']],
+    chips: { duration: [['short', 'Under 5 min'], ['medium', '5–20 min'], ['long', 'Over 20 min']] },
+    sorts: [['saved', 'Recently added'], ['savedOld', 'Earliest added'], ['newest', 'Newest upload'], ['oldest', 'Oldest upload'], ['top', 'Most views'], ['low', 'Fewest views'], ['longest', 'Longest'], ['shortest', 'Shortest'], ['az', 'Title A–Z']]
+  },
+  post: {
+    method: 'wall.get', params: {}, scope: 'wall',
+    types: [['', 'All types'], ...TYPES.map(t => [t, t[0].toUpperCase() + t.slice(1)])],
+    chips: { date: [['week', 'Past 7 days'], ['month', 'Past 30 days'], ['year', 'Past year']] },
+    sorts: [['newest', 'Newest'], ['oldest', 'Oldest'], ['top', 'Most likes'], ['low', 'Fewest likes'], ['comments', 'Most comments'], ['quiet', 'Fewest comments']]
+  }
+};
 
-        function updateNetworkStatus() {
-            state.isOnline = navigator.onLine;
-            const statusEl = document.getElementById('networkStatus');
-            const statusTextEl = document.getElementById('networkStatusText');
-            
-            statusEl.className = 'network-status ' + (state.isOnline ? 'online' : 'offline');
-            statusTextEl.textContent = state.isOnline ? 'Online' : 'Offline';
-        }
+const ts = i => Date.parse(i.date) || 0;
+const SORT = {
+  saved: (a, b) => (b.saved || 0) - (a.saved || 0),
+  savedOld: (a, b) => (a.saved || 0) - (b.saved || 0),
+  az: (a, b) => (a.title || '').localeCompare(b.title || ''),
+  newest: (a, b) => ts(b) - ts(a),
+  oldest: (a, b) => ts(a) - ts(b),
+  top: (a, b) => (b.views ?? b.likes) - (a.views ?? a.likes),
+  low: (a, b) => (a.views ?? a.likes) - (b.views ?? b.likes),
+  longest: (a, b) => b.durationSeconds - a.durationSeconds,
+  shortest: (a, b) => a.durationSeconds - b.durationSeconds,
+  comments: (a, b) => b.comments - a.comments,
+  quiet: (a, b) => a.comments - b.comments
+};
 
-        function showBanner(message, type) {
-            const banner = document.getElementById('connectionBanner');
-            const bannerText = document.getElementById('bannerText');
-            
-            banner.className = 'connection-banner show ' + type;
-            bannerText.textContent = message;
-        }
+const S = {
+  mode: 'video', source: 'live', items: [], view: [], shown: CFG.PAGE, updated: null,
+  token: null, user: null, bridge: null, busy: false, cancel: false,
+  f: { q: '', type: '', sort: 'newest', chip: {} }
+};
 
-        function hideBanner() {
-            document.getElementById('connectionBanner').classList.remove('show');
-        }
+/* ---------- formatting ---------- */
+const iso = s => s ? new Date(s * 1000).toISOString() : '';
+const fmtNum = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n || 0);
+const fmtDate = d => { const t = Date.parse(d); return t ? new Date(t).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''; };
+const fmtDur = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, '0'); return h ? `${h}:${String(m).padStart(2, '0')}:${x}` : `${m}:${x}`; };
+const durClass = s => s < 300 ? 'Short' : s <= 1200 ? 'Medium' : 'Long';
+const res = (w, h) => { const m = Math.min(w || 0, h || 0); return !m ? 'Unknown' : m >= 2160 ? '4K' : m >= 1080 ? '1080p' : m >= 720 ? '720p' : m >= 480 ? '480p' : m >= 360 ? '360p' : 'Unknown'; };
 
-        // ============================================
-        // VK BRIDGE INITIALIZATION (WITH FALLBACKS)
-        // ============================================
+/* ---------- storage (demo and live data never mix) ---------- */
+const key = (m = S.mode, src = S.source) => `vkcm:${src}:${m}`;
+function save(items, m = S.mode, src = S.source) {
+  const put = x => localStorage.setItem(key(m, src), JSON.stringify({ t: Date.now(), items: x }));
+  try { put(items); }
+  catch {
+    try { put(items.map(i => ({ ...i, thumb: '' }))); toast('Storage is nearly full, so thumbnails were not saved.', 'warn'); }
+    catch { toast('Could not save on this device. Results will be lost when you close the app.', 'warn'); }
+  }
+}
+function load(m = S.mode, src = S.source) {
+  try { return JSON.parse(localStorage.getItem(key(m, src))); } catch { return null; }
+}
 
-        async function initVKBridge() {
-            logDebug('Initializing VK Bridge...');
-            updateProgress('Loading VK Bridge...', 'Checking connection', 10);
-            
-            // Check if bridge object exists
-            if (typeof bridge === 'undefined') {
-                logDebug('Bridge not loaded from CDN, checking alternatives...');
-                
-                // Try to load alternative sources
-                await tryAlternativeBridges();
-            }
-            
-            if (typeof bridge !== 'undefined' && bridge.send) {
-                try {
-                    logDebug('Bridge found, attempting initialization...');
-                    
-                    // Test if we're in VK environment
-                    const testResult = await Promise.race([
-                        bridge.send('VKWebAppInit'),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-                    ]);
-                    
-                    logDebug('Bridge initialized successfully');
-                    state.bridgeAvailable = true;
-                    document.getElementById('bridgeStatus').textContent = '✅ VK Bridge Connected';
-                    
-                    // Try to get auth token
-                    await requestAuthToken();
-                    
-                } catch (error) {
-                    logDebug(`Bridge init failed: ${error.message}`);
-                    handleBridgeFailure(error);
-                }
-            } else {
-                logDebug('No bridge available, enabling standalone mode');
-                handleBridgeFailure(new Error('VK Bridge SDK not available'));
-            }
-        }
+/* ---------- UI helpers ---------- */
+let tt;
+function toast(msg, type = '') {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast show ' + type;
+  clearTimeout(tt); tt = setTimeout(() => t.className = 'toast', 3500);
+}
+const setStatus = s => $('#status').textContent = s;
+function fail(msg) { $('#errMsg').textContent = msg; $('#err').hidden = false; }
+function progress(text, pct) { $('#progress').hidden = false; $('#progText').textContent = text; $('#fill').style.width = Math.round(pct * 100) + '%'; }
+function setTheme(scheme) { document.documentElement.dataset.theme = String(scheme).includes('light') ? 'light' : 'dark'; }
+const errMsg = e => {
+  const r = e?.error_data?.error_reason;
+  return (typeof r === 'string' ? r : r?.error_msg) || e?.error_data?.error_description || e?.message || 'Unknown error';
+};
 
-        async function tryAlternativeBridges() {
-            // Try loading from different CDNs
-            const cdnUrls = [
-                'https://cdn.jsdelivr.net/npm/@vkontakte/vk-bridge@2.7.0/dist/browser.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/vk-bridge/2.7.0/browser.min.js'
-            ];
-            
-            for (const url of cdnUrls) {
-                try {
-                    logDebug(`Trying to load bridge from: ${url}`);
-                    await loadScript(url);
-                    if (typeof bridge !== 'undefined') {
-                        logDebug('Bridge loaded successfully from alternative source');
-                        return true;
-                    }
-                } catch (e) {
-                    logDebug(`Failed to load from ${url}: ${e.message}`);
-                }
-            }
-            
-            return false;
-        }
+/* ---------- VK Bridge ---------- */
+function loadScript(u) {
+  return new Promise((ok, no) => {
+    const s = document.createElement('script');
+    s.src = u; s.onload = ok; s.onerror = () => no(new Error('Script failed to load'));
+    document.head.appendChild(s);
+  });
+}
+async function initBridge() {
+  for (const u of CFG.BRIDGES) { if (window.vkBridge) break; try { await loadScript(u); } catch {} }
+  const b = window.vkBridge;
+  if (!b) return setStatus('Standalone preview. VK Bridge could not be loaded.');
+  try {
+    b.subscribe(e => { const d = e.detail; if (d?.type === 'VKWebAppUpdateConfig' && d.data?.scheme) setTheme(d.data.scheme); });
+    await Promise.race([b.send('VKWebAppInit'), timeout(5000)]);
+    S.bridge = b;
+    try { S.user = await b.send('VKWebAppGetUserInfo'); } catch {}
+    if (S.source === 'live') setStatus(S.user ? `Connected to VK as ${S.user.first_name} ${S.user.last_name}` : 'Connected to VK');
+  } catch {
+    setStatus('Standalone preview. Open this app inside VK to index your own content.');
+  }
+}
+// Permissions are requested when the person taps "Index", not on page load
+async function ensureToken(scope) {
+  S.tok = S.tok || {};
+  if (!S.tok[scope]) {
+    const r = await S.bridge.send('VKWebAppGetAuthToken', { app_id: CFG.APP_ID, scope });
+    if (!r.access_token) throw new Error('VK did not grant access.');
+    S.tok[scope] = r.access_token;
+  }
+  return S.token = S.tok[scope];
+}
+async function api(method, params) {
+  for (let i = 1; ; i++) {
+    try {
+      const r = await S.bridge.send('VKWebAppCallAPIMethod', { method, params: { ...params, access_token: S.token, v: '5.199' } });
+      return r.response;
+    } catch (e) {
+      if (i >= CFG.RETRIES || S.cancel) throw e;
+      await sleep(1000 * i);
+    }
+  }
+}
 
-        function loadScript(url) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = url;
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
+/* ---------- indexing ---------- */
+const NORM = {
+  video: v => ({
+    id: v.id, url: `https://vk.com/video${+v.owner_id}_${+v.id}`, title: v.title || 'Untitled video',
+    durationSeconds: v.duration || 0, views: v.views || 0, date: iso(v.date),
+    resolution: res(v.width, v.height), thumb: v.image?.length ? v.image[v.image.length - 1].url : (v.photo_320 || '')
+  }),
+  post: p => {
+    const a = p.attachments?.[0], t = a?.type === 'doc' ? 'document' : (a?.type || 'text');
+    return {
+      id: p.id, url: `https://vk.com/wall${+p.owner_id}_${+p.id}`, text: p.text || '',
+      likes: p.likes?.count || 0, comments: p.comments?.count || 0, reposts: p.reposts?.count || 0,
+      date: iso(p.date), contentType: TYPES.includes(t) ? t : 'text',
+      thumb: a?.photo?.sizes?.slice(-1)[0]?.url || ''
+    };
+  }
+};
 
-        async function requestAuthToken() {
-            try {
-                updateProgress('Requesting permissions...', 'Waiting for authorization', 30);
-                
-                const authResult = await Promise.race([
-                    bridge.send('VKWebAppGetAuthToken', { 
-                        app_id: CONFIG.APP_ID,
-                        scope: 'video,wall,offline'
-                    }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), CONFIG.TIMEOUT_MS))
-                ]);
-                
-                if (authResult.access_token) {
-                    state.accessToken = authResult.access_token;
-                    logDebug('Access token received');
-                    
-                    // Get user info
-                    try {
-                        const userInfo = await bridge.send('VKWebAppGetUserInfo');
-                        if (userInfo && userInfo.id) {
-                            state.userId = userInfo.id;
-                            logDebug(`User ID: ${state.userId}`);
-                        }
-                    } catch (e) {
-                        logDebug('Could not get user info (non-critical)');
-                    }
-                    
-                    checkCachedData();
-                } else {
-                    throw new Error('No access token in response');
-                }
-                
-            } catch (error) {
-                logDebug(`Auth failed: ${error.message}`);
-                throw error;
-            }
-        }
+async function indexContent() {
+  if (S.busy) return;
+  $('#err').hidden = true;
+  if (S.source === 'demo') return toast('Exit demo mode to index your own content.', 'warn');
+  if (!navigator.onLine) return fail('You are offline. Reconnect and try again.');
+  if (!S.bridge) return fail('VK is not connected. Open this app inside VK, or preview it with demo data.');
+  const mode = S.mode;
+  S.busy = true; S.cancel = false; $('#indexBtn').disabled = true;
+  try {
+    progress('Waiting for VK permission…', 0);
+    await ensureToken(MODES[mode].scope);
+    const out = []; let total = CFG.MAX, off = 0;
+    while (off < Math.min(total, CFG.MAX) && !S.cancel) {
+      const r = await api(MODES[mode].method, { ...MODES[mode].params, count: CFG.BATCH, offset: off });
+      total = r.count ?? total;
+      const batch = (r.items || []).filter(it => it.video || it.post || it.id).map(it => ({ ...NORM[mode](it.video || it.post || it), saved: it.added_date || 0 }));
+      out.push(...batch); off += CFG.BATCH;
+      const goal = Math.min(total, CFG.MAX) || 1;
+      progress(`Indexed ${out.length} of ${goal}`, out.length / goal);
+      if (!(r.items || []).length) break;
+      await sleep(CFG.DELAY);
+    }
+    if (out.length) {
+      save(out, mode);
+      if (S.mode === mode) loadMode();
+    }
+    toast(S.cancel ? `Stopped at ${out.length} items.` : `Indexed ${out.length} ${mode}s.`, S.cancel ? 'warn' : 'ok');
+  } catch (e) {
+    fail(`Indexing failed: ${errMsg(e)}`);
+  } finally {
+    S.busy = false; $('#indexBtn').disabled = false; $('#progress').hidden = true;
+  }
+}
 
-        function handleBridgeFailure(error) {
-            state.bridgeAvailable = false;
-            document.getElementById('bridgeStatus').innerHTML = '⚠️ Standalone Mode';
-            
-            showBanner(
-                'Running in offline/standalone mode. Click "Load Demo Data" to preview features.',
-                'warning'
-            );
-            
-            // Don't show scary errors, just enable demo mode option
-            console.warn('VK Bridge unavailable:', error.message);
-            
-            hideLoading();
-        }
+/* ---------- demo data ---------- */
+function makeDemo() {
+  const R = ['4K', '1080p', '720p', '480p', '360p'], D = [154, 345, 750, 1500, 495, 1102, 225, 2110];
+  const VT = ['Tutorial series', 'Day in the city', 'Gadget review', 'Cover performance', 'Stream highlights', 'Easy recipes', 'Paris travel vlog', 'Weekly tech news'];
+  const PT = ['Perfect weather and a productive day.', 'New project announcement coming soon.', 'Every expert was once a beginner.', 'Take regular breaks. It raises productivity.', 'Sharing what I learned this week. Tell me what you think.'];
+  const rnd = n => Math.floor(Math.random() * n), day = () => new Date(Date.now() - Math.random() * 365 * 864e5).toISOString();
+  const N = Array.from({ length: 48 }, (_, i) => i);
+  save(N.map(i => ({ id: i, title: `${VT[i % 8]} #${i + 1}`, durationSeconds: D[i % 8], views: 100 + rnd(50000), date: day(), resolution: R[i % 5], thumb: '', saved: Math.floor(Date.now() / 1000) - rnd(3e7) })), 'video', 'demo');
+  save(N.map(i => ({ id: i, text: PT[i % 5], likes: rnd(1000), comments: rnd(200), reposts: rnd(100), date: day(), contentType: TYPES[i % 6], thumb: '' })), 'post', 'demo');
+}
+function toggleDemo() {
+  if (S.busy) return;
+  S.source = S.source === 'demo' ? 'live' : 'demo';
+  if (S.source === 'demo' && !load('video')) makeDemo();
+  $('#demoBtn').textContent = S.source === 'demo' ? 'Exit demo' : 'Preview with demo data';
+  setStatus(S.source === 'demo' ? 'Demo data. This is sample content, not yours.' : (S.user ? `Connected to VK as ${S.user.first_name} ${S.user.last_name}` : 'Standalone preview'));
+  loadMode();
+}
 
-        // ============================================
-        // DEMO MODE
-        // ============================================
+/* ---------- filtering and rendering ---------- */
+function buildControls() {
+  const m = MODES[S.mode];
+  $('#type').innerHTML = m.types.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
+  $('#sort').innerHTML = m.sorts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
+  S.f.sort = m.sorts[0][0]; $('#sort').value = S.f.sort;
+  $('#chips').innerHTML = Object.entries(m.chips).flatMap(([g, o]) => o.map(([v, l]) => `<button class="chip" data-g="${g}" data-v="${v}" aria-pressed="false">${esc(l)}</button>`)).join('');
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === S.mode));
+  $('#indexBtn').textContent = S.mode === 'video' ? 'Index liked videos' : 'Index my posts';
+}
+function loadMode() {
+  const c = load();
+  S.items = c?.items || []; S.updated = c?.t || null; S.shown = CFG.PAGE;
+  apply();
+}
+function apply() {
+  const f = S.f, q = f.q.trim().toLowerCase(), now = Date.now();
+  S.view = S.items.filter(i => {
+    if (q && !(i.title || i.text || '').toLowerCase().includes(q)) return false;
+    if (f.type && (i.resolution || i.contentType) !== f.type) return false;
+    const d = f.chip.duration, s = i.durationSeconds;
+    if (d && (d === 'short' ? s >= 300 : d === 'medium' ? (s < 300 || s > 1200) : s <= 1200)) return false;
+    const w = f.chip.date;
+    if (w && now - ts(i) > DAYS[w] * 864e5) return false;
+    return true;
+  }).sort(SORT[f.sort]);
+  render();
+}
+function card(i) {
+  const v = S.mode === 'video';
+  const img = /^https:\/\//.test(i.thumb) ? `<img src="${esc(i.thumb)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+  const thumb = v ? `<div class="thumb">${img}<span class="dur">${fmtDur(i.durationSeconds)}</span></div>` : (img ? `<div class="thumb">${img}</div>` : '');
+  const body = v
+    ? `<div class="title">${esc(i.title)}</div><div class="meta"><span>${fmtNum(i.views)} views</span><span>${esc(durClass(i.durationSeconds))}</span><span class="tag">${esc(i.resolution)}</span><span>${esc(fmtDate(i.date))}</span></div>`
+    : `<div class="text">${esc(i.text) || '<span class="mute">No text</span>'}</div><div class="meta"><span>${fmtNum(i.likes)} likes</span><span>${fmtNum(i.comments)} comments</span><span>${fmtNum(i.reposts)} reposts</span><span class="tag">${esc(i.contentType)}</span><span>${esc(fmtDate(i.date))}</span></div>`;
+  const inner = `${thumb}<div class="body">${body}</div>`;
+  return S.source === 'live' && i.url ? `<a class="card" href="${esc(i.url)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="card">${inner}</div>`;
+}
+function render() {
+  const n = S.items.length, noun = S.mode + 's';
+  $('#grid').innerHTML = S.view.slice(0, S.shown).map(card).join('');
+  $('#more').hidden = S.shown >= S.view.length;
+  $('#summary').textContent = n ? `${S.view.length} of ${n} ${noun} match.` + (S.updated ? ` Updated ${new Date(S.updated).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.` : '') : '';
+  const e = $('#empty');
+  e.hidden = S.view.length > 0;
+  e.innerHTML = n ? '<b>No matches</b>Clear the search or filters to see more.' : `<b>No ${noun} indexed yet</b>Select “${$('#indexBtn').textContent}” to load them from VK, or preview the app with demo data.`;
+}
+function exportCsv() {
+  if (!S.view.length) return toast('Nothing to export.', 'warn');
+  const cols = Object.keys(S.view[0]).filter(k => k !== 'thumb');
+  const cell = v => { v = String(v ?? ''); if (/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
+  const csv = [cols.join(','), ...S.view.map(r => cols.map(c => cell(r[c])).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
+  a.download = `vk-${S.mode}s.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 
-        function enableDemoMode() {
-            logDebug('Enabling demo mode...');
-            showLoading(true);
-            updateProgress('Generating demo data...', 'Creating sample content', 20);
-            
-            setTimeout(() => {
-                generateDemoData();
-                state.isDemoMode = true;
-                
-                updateProgress('Complete!', 'Demo data ready', 100);
-                
-                setTimeout(() => {
-                    hideLoading();
-                    showBanner('Demo mode active - Sample data loaded', 'success');
-                    setTimeout(hideBanner, 4000);
-                }, 500);
-            }, 500);
-        }
+/* ---------- init ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  setTheme(matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  buildControls(); loadMode();
 
-        function generateDemoData() {
-            const videoDemo = [];
-            const postDemo = [];
-            
-            const resolutions = ['4K', '1080p', '720p', '480p', '360p'];
-            const durations = [
-                { label: '2:34', seconds: 154 },
-                { label: '5:45', seconds: 345 },
-                { label: '12:30', seconds: 750 },
-                { label: '25:00', seconds: 1500 },
-                { label: '8:15', seconds: 495 },
-                { label: '18:22', seconds: 1102 },
-                { label: '3:45', seconds: 225 },
-                { label: '35:10', seconds: 2110 }
-            ];
-            const postTypes = ['text', 'photo', 'video', 'link', 'audio', 'document'];
-            const videoTitles = [
-                'Amazing Tutorial Series Part 1',
-                'Vlog: My Day in the City',
-                'Product Review: Latest Tech Gadgets',
-                'Music Video Cover Performance',
-                'Gaming Livestream Highlights',
-                'Cooking Show: Easy Recipes',
-                'Travel Vlog: Paris Adventure',
-                'Tech News Weekly Update'
-            ];
-            const postTexts = [
-                'Just had an amazing day! The weather was perfect and I got so much done. Really feeling productive today! 🌟',
-                'New project announcement coming soon! Stay tuned for something exciting. We have been working hard behind the scenes.',
-                'Thought of the day: Every expert was once a beginner. Keep learning and growing! 💪',
-                'Quick tip: Take regular breaks when working. Your productivity will actually increase! #ProductivityHacks',
-                'Sharing some insights from my recent experience. Let me know what you think in the comments below 👇'
-            ];
-            
-            for (let i = 0; i < 48; i++) {
-                const dur = durations[i % durations.length];
-                const daysAgo = Math.floor(Math.random() * 365);
-                
-                // Video demos
-                videoDemo.push({
-                    id: `video_demo_${i}`,
-                    title: `${videoTitles[i % videoTitles.length]} ${i > 7 ? '#' + (i - 7) : ''}`,
-                    duration: dur.label,
-                    durationSeconds: dur.seconds,
-                    views: Math.floor(Math.random() * 50000) + 100,
-                    date: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-                    resolution: resolutions[i % resolutions.length],
-                    thumbnail: null,
-                    type: 'video'
-                });
-                
-                // Post demos
-                postDemo.push({
-                    id: `post_demo_${i}`,
-                    text: `${postTexts[i % postTexts.length]} ${i > 4 ? '(Post #' + (i - 4) + ')' : ''}`,
-                    likes: Math.floor(Math.random() * 1000),
-                    comments: Math.floor(Math.random() * 200),
-                    reposts: Math.floor(Math.random() * 100),
-                    date: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-                    contentType: postTypes[i % postTypes.length],
-                    type: 'post'
-                });
-            }
-            
-            // Save to localStorage
-            saveToStorage('video', videoDemo);
-            saveToStorage('post', postDemo);
-            
-            // Load current mode's data
-            state.allContent = currentModeData();
-            updateStats(Date.now());
-            applyFilters();
-            
-            logDebug(`Generated ${videoDemo.length} videos and ${postDemo.length} posts`);
-        }
+  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
+    S.mode = b.dataset.mode; S.f = { q: S.f.q, type: '', sort: 'newest', chip: {} };
+    buildControls(); loadMode();
+  });
+  let deb; $('#q').oninput = e => { clearTimeout(deb); deb = setTimeout(() => { S.f.q = e.target.value; S.shown = CFG.PAGE; apply(); }, 200); };
+  $('#type').onchange = e => { S.f.type = e.target.value; S.shown = CFG.PAGE; apply(); };
+  $('#sort').onchange = e => { S.f.sort = e.target.value; S.shown = CFG.PAGE; apply(); };
+  // Chips in the same group are exclusive, so "Short" and "Long" can no longer combine into zero results
+  $('#chips').onclick = e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    const { g, v } = b.dataset;
+    S.f.chip[g] = S.f.chip[g] === v ? undefined : v;
+    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', S.f.chip[c.dataset.g] === c.dataset.v));
+    S.shown = CFG.PAGE; apply();
+  };
+  $('#more').onclick = () => { S.shown += CFG.PAGE; render(); };
+  $('#indexBtn').onclick = indexContent;
+  $('#retryBtn').onclick = indexContent;
+  $('#cancelBtn').onclick = () => S.cancel = true;
+  $('#demoBtn').onclick = toggleDemo;
+  $('#exportBtn').onclick = exportCsv;
+  addEventListener('online', () => toast('Back online.', 'ok'));
+  addEventListener('offline', () => toast('You are offline. Saved content still works.', 'warn'));
 
-        // ============================================
-        // DATA FETCHING WITH RETRY LOGIC
-        // ============================================
-
-        async function startIndexing() {
-            if (!state.isOnline && !state.isDemoMode) {
-                showError('Offline', 'You appear to be offline. Please check your internet connection and try again.\n\nTip: You can use "Load Demo Data" to preview the app.');
-                return;
-            }
-            
-            if (!state.bridgeAvailable && !state.isDemoMode) {
-                showBanner('VK Bridge not available. Using simulated data.', 'warning');
-                setTimeout(() => {
-                    enableDemoMode();
-                }, 1500);
-                return;
-            }
-            
-            showLoading(true);
-            hideError();
-            state.currentRetryCount = 0;
-            state.pendingOperation = 'index';
-            
-            await performIndexing();
-        }
-
-        async function performIndexing() {
-            try {
-                let fetchedContent = [];
-                let offset = 0;
-                let hasMore = true;
-                let batchNum = 0;
-                
-                while (hasMore && fetchedContent.length < CONFIG.MAX_ITEMS) {
-                    batchNum++;
-                    updateProgress(
-                        `Fetching batch ${batchNum}...`,
-                        `${fetchedContent.length} items collected`,
-                        Math.min((fetchedContent.length / CONFIG.MAX_ITEMS) * 90, 90)
-                    );
-                    
-                    let result;
-                    if (state.currentMode === 'video') {
-                        result = await fetchWithRetry(() => fetchVideos(offset, CONFIG.BATCH_SIZE));
-                    } else {
-                        result = await fetchWithRetry(() => fetchPosts(offset, CONFIG.BATCH_SIZE));
-                    }
-                    
-                    if (result && result.items && result.items.length > 0) {
-                        fetchedContent = fetchedContent.concat(result.items);
-                        offset += CONFIG.BATCH_SIZE;
-                        
-                        if (result.items.length < CONFIG.BATCH_SIZE) {
-                            hasMore = false;
-                        }
-                    } else {
-                        hasMore = false;
-                    }
-                    
-                    // Small delay to avoid rate limiting
-                    await sleep(100);
-                }
-                
-                // Cache results
-                state.allContent = fetchedContent;
-                saveToStorage(state.currentMode, fetchedContent);
-                
-                updateProgress('✅ Complete!', `${fetchedContent.length} items indexed`, 100);
-                
-                setTimeout(() => {
-                    hideLoading();
-                    updateStats(Date.now());
-                    applyFilters();
-                    showBanner(`Successfully indexed ${fetchedContent.length} items!`, 'success');
-                    setTimeout(hideBanner, 3000);
-                }, 800);
-                
-            } catch (error) {
-                logError('Indexing failed:', error);
-                hideLoading();
-                showError('Indexing Failed', formatErrorMessage(error));
-            }
-        }
-
-        async function fetchWithRetry(fetchFn, retries = CONFIG.MAX_RETRIES) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    return await fetchFn();
-                } catch (error) {
-                    logDebug(`Attempt ${i + 1} failed: ${error.message}`);
-                    
-                    if (i === retries - 1) throw error;
-                    
-                    updateProgress(
-                        `Retrying... (${i + 1}/${retries})`,
-                        error.message,
-                        null
-                    );
-                    
-                    await sleep(CONFIG.RETRY_DELAY * (i + 1));
-                }
-            }
-        }
-
-        async function fetchVideos(offset, count) {
-            if (!state.bridgeAvailable || state.isDemoMode) {
-                // Return cached/simulated data
-                const data = currentModeData();
-                return { items: data.slice(offset, offset + count) };
-            }
-            
-            const result = await bridge.send('VKWebAppCallAPIMethod', {
-                method: 'fave.get',
-                params: {
-                    access_token: state.accessToken,
-                    item_type: 'video',
-                    offset: offset,
-                    count: count,
-                    v: '5.131'
-                }
-            });
-            
-            if (result.response) {
-                return {
-                    items: result.response.items.map(video => ({
-                        id: video.id,
-                        title: video.title || 'Untitled Video',
-                        duration: formatDuration(video.duration),
-                        durationSeconds: video.duration || 0,
-                        views: video.views || 0,
-                        date: new Date((video.date || 0) * 1000).toISOString(),
-                        resolution: getResolution(video.width, video.height),
-                        thumbnail: video.photo_800 || video.photo_320 || null,
-                        type: 'video'
-                    }))
-                };
-            }
-            
-            throw new Error(result.error?.error_msg || 'Failed to fetch videos');
-        }
-
-        async function fetchPosts(offset, count) {
-            if (!state.bridgeAvailable || state.isDemoMode) {
-                const data = currentModeData();
-                return { items: data.slice(offset, offset + count) };
-            }
-            
-            const result = await bridge.send('VKWebAppCallAPIMethod', {
-                method: 'newsfeed.get',
-                params: {
-                    access_token: state.accessToken,
-                    filters: 'post',
-                    offset: offset,
-                    count: count,
-                    v: '5.131'
-                }
-            });
-            
-            if (result.response) {
-                return {
-                    items: result.response.items.map(post => ({
-                        id: post.id,
-                        text: post.text || '',
-                        likes: post.likes?.count || 0,
-                        comments: post.comments?.count || 0,
-                        reposts: post.reposts?.count || 0,
-                        date: new Date((post.date || 0) * 1000).toISOString(),
-                        contentType: getPostContentType(post),
-                        type: 'post'
-                    }))
-                };
-            }
-            
-            throw new Error(result.error?.error_msg || 'Failed to fetch posts');
-        }
-
-        // ============================================
-        // STORAGE HELPERS
-        // ============================================
-
-        function saveToStorage(mode, data) {
-            try {
-                localStorage.setItem(CONFIG.STORAGE_KEY_PREFIX + mode, JSON.stringify({
-                    data: data,
-                    timestamp: Date.now()
-                }));
-            } catch (e) {
-                logError('Storage save failed:', e);
-            }
-        }
-
-        function loadFromStorage(mode) {
-            try {
-                const stored = localStorage.getItem(CONFIG.STORAGE_KEY_PREFIX + mode);
-                return stored ? JSON.parse(stored) : null;
-            } catch (e) {
-                logError('Storage load failed:', e);
-                return null;
-            }
-        }
-
-        function currentModeData() {
-            const cached = loadFromStorage(state.currentMode);
-            return cached?.data || [];
-        }
-
-        function checkCachedData() {
-            const cached = loadFromStorage(state.currentMode);
-            if (cached && cached.data) {
-                state.allContent = cached.data;
-                updateStats(cached.timestamp);
-                applyFilters();
-            }
-        }
-
-        // ============================================
-        // UI FUNCTIONS
-        // ============================================
-
-        function switchMode(mode) {
-            state.currentMode = mode;
-            
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.mode === mode);
-            });
-            
-            updateFilterOptions();
-            checkCachedData();
-        }
-
-        function updateFilterOptions() {
-            const typeFilter = document.getElementById('typeFilter');
-            const sortDropdown = document.getElementById('sortDropdown');
-            const chipsContainer = document.getElementById('chipsContainer');
-            
-            if (state.currentMode === 'video') {
-                typeFilter.innerHTML = `
-                    <option value="">All Resolutions</option>
-                    <option value="4K">4K Ultra HD</option>
-                    <option value="1080p">Full HD (1080p)</option>
-                    <option value="720p">HD (720p)</option>
-                    <option value="480p">SD (480p)</option>
-                    <option value="360p">Low (360p)</option>
-                `;
-                
-                chipsContainer.innerHTML = `
-                    <span class="chip" data-filter="duration" data-value="short" onclick="toggleChip(this)">⚡ Short (&lt;5 min)</span>
-                    <span class="chip" data-filter="duration" data-value="medium" onclick="toggleChip(this)">📺 Medium (5-20 min)</span>
-                    <span class="chip" data-filter="duration" data-value="long" onclick="toggleChip(this)">🎬 Long (&gt;20 min)</span>
-                `;
-                
-                sortDropdown.innerHTML = `
-                    <option value="newest">📅 Newest First</option>
-                    <option value="oldest">📅 Oldest First</option>
-                    <option value="most-engaged">👁️ Most Views</option>
-                    <option value="least-engaged">👁️ Least Views</option>
-                    <option value="duration-long">⏱️ Longest Duration</option>
-                    <option value="duration-short">⏱️ Shortest Duration</option>
-                `;
-            } else {
-                typeFilter.innerHTML = `
-                    <option value="">All Types</option>
-                    <option value="text">Text Posts</option>
-                    <option value="photo">Photo Posts</option>
-                    <option value="video">Video Posts</option>
-                    <option value="link">Link Posts</option>
-                    <option value="audio">Audio Posts</option>
-                    <option value="document">Document Posts</option>
-                `;
-                
-                chipsContainer.innerHTML = `
-                    <span class="chip" data-filter="date" data-value="week" onclick="toggleChip(this)">📅 This Week</span>
-                    <span class="chip" data-filter="date" data-value="month" onclick="toggleChip(this)">📆 This Month</span>
-                    <span class="chip" data-filter="date" data-value="year" onclick="toggleChip(this)">🗓️ This Year</span>
-                `;
-                
-                sortDropdown.innerHTML = `
-                    <option value="newest">📅 Newest First</option>
-                    <option value="oldest">📅 Oldest First</option>
-                    <option value="most-engaged">❤️ Most Liked</option>
-                    <option value="least-engaged">❤️ Least Liked</option>
-                    <option value="most-comments">💬 Most Comments</option>
-                    <option value="least-comments">💬 Least Comments</option>
-                `;
-            }
-        }
-
-        function applyFilters() {
-            const searchTerm = document.getElementById('searchBar').value.toLowerCase();
-            const typeValue = document.getElementById('typeFilter').value;
-            const sortValue = document.getElementById('sortDropdown').value;
-            const activeChips = Array.from(document.querySelectorAll('.chip.active'))
-                .map(chip => ({ filter: chip.dataset.filter, value: chip.dataset.value }));
-            
-            state.filteredContent = state.allContent.filter(item => {
-                // Search filter
-                if (searchTerm) {
-                    const searchableText = state.currentMode === 'video' ? item.title : item.text;
-                    if (!searchableText.toLowerCase().includes(searchTerm)) return false;
-                }
-                
-                // Type filter
-                if (typeValue) {
-                    if (state.currentMode === 'video' && item.resolution !== typeValue) return false;
-                    if (state.currentMode === 'post' && item.contentType !== typeValue) return false;
-                }
-                
-                // Chip filters
-                for (const chip of activeChips) {
-                    if (chip.filter === 'duration') {
-                        if (chip.value === 'short' && item.durationSeconds >= 300) return false;
-                        if (chip.value === 'medium' && (item.durationSeconds < 300 || item.durationSeconds > 1200)) return false;
-                        if (chip.value === 'long' && item.durationSeconds <= 1200) return false;
-                    }
-                    
-                    if (chip.filter === 'date') {
-                        const itemDate = new Date(item.date);
-                        const now = new Date();
-                        
-                        if (chip.value === 'week' && (now - itemDate) > 7 * 24 * 60 * 60 * 1000) return false;
-                        if (chip.value === 'month' && (now - itemDate) > 30 * 24 * 60 * 60 * 1000) return false;
-                        if (chip.value === 'year' && (now - itemDate) > 365 * 24 * 60 * 60 * 1000) return false;
-                    }
-                }
-                
-                return true;
-            });
-            
-            sortContent(sortValue);
-            renderContent();
-        }
-
-        function sortContent(sortValue) {
-            switch (sortValue) {
-                case 'newest':
-                    state.filteredContent.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    break;
-                case 'oldest':
-                    state.filteredContent.sort((a, b) => new Date(a.date) - new Date(b.date));
-                    break;
-                case 'most-engaged':
-                    state.filteredContent.sort((a, b) => 
-                        (state.currentMode === 'video' ? b.views : b.likes) - 
-                        (state.currentMode === 'video' ? a.views : a.likes)
-                    );
-                    break;
-                case 'least-engaged':
-                    state.filteredContent.sort((a, b) => 
-                        (state.currentMode === 'video' ? a.views : a.likes) - 
-                        (state.currentMode === 'video' ? b.views : b.likes)
-                    );
-                    break;
-                case 'duration-long':
-                    state.filteredContent.sort((a, b) => (b.durationSeconds || 0) - (a.durationSeconds || 0));
-                    break;
-                case 'duration-short':
-                    state.filteredContent.sort((a, b) => (a.durationSeconds || 0) - (b.durationSeconds || 0));
-                    break;
-                case 'most-comments':
-                    state.filteredContent.sort((a, b) => (b.comments || 0) - (a.comments || 0));
-                    break;
-                case 'least-comments':
-                    state.filteredContent.sort((a, b) => (a.comments || 0) - (b.comments || 0));
-                    break;
-            }
-        }
-
-        function toggleChip(chip) {
-            chip.classList.toggle('active');
-            applyFilters();
-        }
-
-        function renderContent() {
-            const grid = document.getElementById('contentGrid');
-            const emptyState = document.getElementById('emptyState');
-            
-            if (state.filteredContent.length === 0) {
-                grid.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-            
-            emptyState.classList.add('hidden');
-            
-            grid.innerHTML = state.filteredContent.map(item => {
-                return state.currentMode === 'video' ? createVideoCard(item) : createPostCard(item);
-            }).join('');
-        }
-
-        function createVideoCard(item) {
-            const thumbnailHtml = item.thumbnail 
-                ? `<img src="${item.thumbnail}" alt="${escapeHtml(item.title)}" onerror="this.parentElement.innerHTML='🎬'" loading="lazy">` 
-                : '🎬';
-            
-            return `
-                <div class="content-card">
-                    <div class="card-thumbnail">${thumbnailHtml}</div>
-                    <div class="card-body">
-                        <div class="card-title">${escapeHtml(item.title)}</div>
-                        <div class="card-meta">
-                            <span class="meta-item"><span class="meta-icon">👁️</span> ${formatNumber(item.views)}</span>
-                            <span class="meta-item"><span class="meta-icon">⏱️</span> ${item.duration}</span>
-                        </div>
-                        <div class="card-badges">
-                            <span class="badge badge-resolution">${item.resolution}</span>
-                            <span class="badge badge-duration">${getDurationCategory(item.durationSeconds)}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createPostCard(item) {
-            const iconMap = { text: '📝', photo: '🖼️', video: '🎬', link: '🔗', audio: '🎵', document: '📄' };
-            
-            return `
-                <div class="content-card">
-                    <div class="card-thumbnail" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e); font-size: 4rem;">
-                        ${iconMap[item.contentType] || '📝'}
-                    </div>
-                    <div class="card-body">
-                        <div class="card-text-preview">${escapeHtml(item.text)}</div>
-                        <div class="card-meta" style="margin-top: 12px;">
-                            <span class="meta-item"><span class="meta-icon">❤️</span> ${formatNumber(item.likes)}</span>
-                            <span class="meta-item"><span class="meta-icon">💬</span> ${formatNumber(item.comments)}</span>
-                            <span class="meta-item"><span class="meta-icon">🔄</span> ${formatNumber(item.reposts)}</span>
-                        </div>
-                        <div class="card-badges">
-                            <span class="badge badge-type">${item.contentType}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ============================================
-        // HELPER FUNCTIONS
-        // ============================================
-
-        function formatDuration(seconds) {
-            if (!seconds) return '0:00';
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = seconds % 60;
-            return h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` 
-                         : `${m}:${s.toString().padStart(2, '0')}`;
-        }
-
-        function getResolution(width, height) {
-            if (!width || !height) return 'Unknown';
-            const min = Math.min(width, height);
-            if (min >= 2160) return '4K';
-            if (min >= 1080) return '1080p';
-            if (min >= 720) return '720p';
-            if (min >= 480) return '480p';
-            if (min >= 360) return '360p';
-            return 'SD';
-        }
-
-        function getPostContentType(post) {
-            if (post.attachments?.length > 0) return post.attachments[0].type || 'text';
-            return post.text ? 'text' : 'unknown';
-        }
-
-        function getDurationCategory(seconds) {
-            if (!seconds) return 'Unknown';
-            if (seconds < 300) return 'Short';
-            if (seconds <= 1200) return 'Medium';
-            return 'Long';
-        }
-
-        function formatNumber(num) {
-            if (!num) return '0';
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-            return num.toString();
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        function formatErrorMessage(error) {
-            const parts = [
-                'Error Details:',
-                '',
-                `Message: ${error.message || 'Unknown error'}`,
-                `Time: ${new Date().toISOString()}`,
-                `Online: ${navigator.onLine}`,
-                `Bridge Available: ${state.bridgeAvailable}`,
-                `Demo Mode: ${state.isDemoMode}`
-            ];
-            
-            if (error.stack) {
-                parts.push('', 'Stack Trace:', error.stack.substring(0, 500));
-            }
-            
-            return parts.join('\n');
-        }
-
-        // ============================================
-        // UI CONTROLS
-        // ============================================
-
-        function updateStats(timestamp) {
-            document.getElementById('totalCount').textContent = state.allContent.length;
-            if (timestamp) {
-                document.getElementById('lastUpdated').textContent = 
-                    new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            }
-        }
-
-        function showLoading(show) {
-            const overlay = document.getElementById('loadingOverlay');
-            const btn = document.getElementById('indexBtn');
-            const retryBtn = document.getElementById('retryBtn');
-            
-            if (show) {
-                overlay.classList.remove('hidden');
-                btn.disabled = true;
-                retryBtn.classList.add('hidden');
-            } else {
-                overlay.classList.add('hidden');
-                btn.disabled = false;
-            }
-        }
-
-        function updateProgress(text, detail, percent) {
-            document.getElementById('progressText').textContent = text;
-            document.getElementById('progressDetail').textContent = detail;
-            if (percent !== null && percent !== undefined) {
-                document.getElementById('progressBar').style.width = percent + '%';
-            }
-        }
-
-        function showError(title, details) {
-            const section = document.getElementById('errorSection');
-            const content = document.getElementById('errorContent');
-            
-            section.classList.remove('hidden');
-            content.textContent = details;
-            
-            // Also show retry button in loading overlay if visible
-            const overlay = document.getElementById('loadingOverlay');
-            if (!overlay.classList.contains('hidden')) {
-                document.getElementById('retryBtn').classList.remove('hidden');
-            }
-        }
-
-        function hideError() {
-            document.getElementById('errorSection').classList.add('hidden');
-        }
-
-        function toggleErrorDetails() {
-            const details = document.getElementById('errorDetails');
-            const toggle = document.getElementById('errorToggle');
-            details.classList.toggle('expanded');
-            toggle.classList.toggle('expanded');
-        }
-
-        function retryOperation() {
-            if (state.pendingOperation === 'index') {
-                startIndexing();
-            }
-        }
-
-        // ============================================
-        // DEBUG UTILITIES
-        // ============================================
-
-        function logDebug(message) {
-            console.log(`[VK App] ${message}`);
-            updateDebugPanel();
-        }
-
-        function logError(message, error) {
-            console.error(`[VK App] ${message}`, error);
-            updateDebugPanel();
-        }
-
-        function updateDebugPanel() {
-            if (window.location.search.includes('debug=1')) {
-                const panel = document.getElementById('debugPanel');
-                const content = document.getElementById('debugContent');
-                
-                panel.classList.remove('hidden');
-                content.innerHTML = `
-                    <div class="debug-item">
-                        <span class="debug-label">Online:</span>
-                        <span class="debug-value">${state.isOnline}</span>
-                    </div>
-                    <div class="debug-item">
-                        <span class="debug-label">Bridge:</span>
-                        <span class="debug-value">${state.bridgeAvailable}</span>
-                    </div>
-                    <div class="debug-item">
-                        <span class="debug-label">Demo Mode:</span>
-                        <span class="debug-value">${state.isDemoMode}</span>
-                    </div>
-                    <div class="debug-item">
-                        <span class="debug-label">Token:</span>
-                        <span class="debug-value">${state.accessToken ? '✓ Set' : '✗ Not set'}</span>
-                    </div>
-                    <div class="debug-item">
-                        <span class="debug-label">User ID:</span>
-                        <span class="debug-value">${state.userId || 'N/A'}</span>
-                    </div>
-                    <div class="debug-item">
-                        <span class="debug-label">Items Loaded:</span>
-                        <span class="debug-value">${state.allContent.length}</span>
-                    </div>
-                    <div class="debug-item">
-                        <span class="debug-label">Current Mode:</span>
-                        <span class="debug-value">${state.currentMode}</span>
-                    </div>
-                `;
-            }
-        }
-
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-
-        document.addEventListener('DOMContentLoaded', () => {
-            logDebug('App initializing...');
-            
-            // Initialize network detection first
-            initNetworkDetection();
-            
-            // Initialize UI
-            updateFilterOptions();
-            
-            // Try to initialize VK Bridge (with timeout protection)
-            Promise.race([
-                initVKBridge(),
-                new Promise(resolve => setTimeout(resolve, 8000))
-            ]).then(() => {
-                logDebug('Initialization complete');
-                hideLoading();
-                updateDebugPanel();
-            }).catch(error => {
-                logError('Init error:', error);
-                hideLoading();
-            });
-        });
-
-        // Global error handler
-        window.addEventListener('error', (event) => {
-            logError('Global error:', event.error);
-        });
-
-        // Handle unhandled promise rejections
-        window.addEventListener('unhandledrejection', (event) => {
-            logError('Unhandled rejection:', event.reason);
-        });
-    </script>
+  initBridge(); // cached content is already on screen while VK connects
+});
+</script>
 </body>
 </html>
